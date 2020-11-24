@@ -1,5 +1,5 @@
 from pykittyui import Window
-from pykittyui.keys import KeyCombo, KeyCode, Modifier
+from pykittyui.keys import KeyCombo, Key, Modifier
 
 class HelloWorld(Window):
     """A simple window that draws an hello world."""
@@ -12,9 +12,9 @@ class HelloWorld(Window):
         self.get_buffer().draw_text(x, y, text)
 
     def on_key(self, combo: KeyCombo) -> None:
-        if combo.key in (KeyCode.ESCAPE, KeyCode.Q) and not combo.modifiers:
+        if combo.key in (Key.ESCAPE, Key.Q) and not combo.modifiers:
             self.quit()
-        elif combo.key in (KeyCode.Q, KeyCode.W) and Modifier.CTRL in combo.modifiers:
+        elif combo.key in (Key.Q, Key.W) and Modifier.CTRL in combo.modifiers:
             self.quit()
 
 if __name__ == "__main__":

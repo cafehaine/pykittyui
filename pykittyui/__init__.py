@@ -1,7 +1,10 @@
+import atexit
+from queue import Queue
+import sys
 import termios
 from typing import Sequence
 
-from .keys import KeyCombo
+from .keys import KeyCombo, read_keys
 from .buffer import Buffer
 
 class Window:
@@ -11,6 +14,7 @@ class Window:
         self._width: int = 0
         self._height: int = 0
         self._buffer = Buffer(0, 0)
+        atexit.register(self._cleanup)
 
     def get_buffer(self) -> Buffer:
         return self._buffer
@@ -28,9 +32,28 @@ class Window:
     def loop(self) -> None:
         """Run the main loop."""
         self._should_run = True
-        while self._should_run:
-            pass
+        # Enable kitty full mode
+        sys.stdout.write("\x1b[?2017h")
+        sys.stdout.flush()
+        # Disable key echo
+        attrs = termios.tcgetattr(sys.stdin)
+        attrs[3] = attrs[3] & (~(termios.ECHO | termios.ICANON))
+        termios.tcsetattr(sys.stdin, termios.TCSANOW, attrs)
+        self.draw(80, 40) # TODO use real width
 
-    def __del__(self) -> None:
+        key_queue: 'Queue[KeyCombo]' = Queue()
+        read_keys(key_queue)
+
+        while self._should_run:
+            print("{}".format(key_queue.get()))
+
+    @staticmethod
+    def _cleanup() -> None:
         """Cleanup on destroy."""
-        # TODO disable direct mode
+        # Disable kitty full mode
+        sys.stdout.write("\x1b[?2017l")
+        sys.stdout.flush()
+        # Enable key echo
+        attrs = termios.tcgetattr(sys.stdin)
+        attrs[3] = attrs[3] | termios.ECHO | termios.ICANON
+        termios.tcsetattr(sys.stdin, termios.TCSANOW, attrs)

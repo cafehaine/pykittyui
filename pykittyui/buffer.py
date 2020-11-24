@@ -21,12 +21,12 @@ class Buffer:
         new_buffer = []
         for y in range(height):
             old_line = self._buffer[y] if y < self._height else ""
-            new_buffer.append(old_line[:width]+"X"*(max(width-self._widthwidth, 0)))
+            new_buffer.append(old_line[:width]+"X"*(max(width-self._width, 0)))
         self._width = width
         self._height = height
         self._buffer = new_buffer
 
-    def draw_text(x, y, text: str) -> None:
+    def draw_text(self, x, y, text: str) -> None:
         """Draw some text in the buffer."""
         if y >= self._height or y < 0:
             return
