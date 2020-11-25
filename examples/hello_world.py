@@ -1,21 +1,29 @@
 from pykittyui import Window
-from pykittyui.keys import KeyCombo, Key, Modifier
+from pykittyui.keys import KeyCombo, SpecialKey
+
 
 class HelloWorld(Window):
     """A simple window that draws an hello world."""
 
-    def draw(self, width: int, height: int):
+    def __init__(self):
+        super().__init__()
+        self.text = "Hello World!"
+
+    def draw(self):
         """Draw Hello World! on the screen."""
-        text = "Hello World!"
-        x = width // 2 - len(text) // 2
+        buff = self.get_buffer()
+        buff.clear()
+        width, height = self.get_dimensions()
+        x = width // 2 - len(self.text) // 2
         y = height // 2
-        self.get_buffer().draw_text(x, y, text)
+        buff.draw_text(x, y, self.text)
 
     def on_key(self, combo: KeyCombo) -> None:
-        if combo.key in (Key.ESCAPE, Key.Q) and not combo.modifiers:
+        if combo.key in ("q", SpecialKey.ESCAPE) and not combo.modifiers:
             self.quit()
-        elif combo.key in (Key.Q, Key.W) and Modifier.CTRL in combo.modifiers:
-            self.quit()
+        else:
+            self.text = f"Key: {combo.key!r}. Press 'q' to exit."
+
 
 if __name__ == "__main__":
     window = HelloWorld()
