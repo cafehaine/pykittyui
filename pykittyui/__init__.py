@@ -1,11 +1,17 @@
 import atexit
 from queue import Queue
+from shutil import get_terminal_size
+import signal
 import sys
 import termios
-from typing import Sequence, Tuple
+from typing import Sequence, Tuple, Union
 
 from .keys import KeyCombo, read_keys
 from .buffer import Buffer
+
+
+class WindowResizeEvent:
+    """Sent when the window was resized."""
 
 
 class Window:
@@ -14,8 +20,9 @@ class Window:
     def __init__(self) -> None:
         self._should_run: bool = False
         self._width: int = 80
-        self._height: int = 40
-        self._buffer = Buffer(80, 40)
+        self._height: int = 24
+        self._buffer = Buffer(80, 24)
+        self._event_queue: "Queue[Union[KeyCombo, WindowResizeEvent]]" = Queue()
         atexit.register(self._cleanup)
 
     def get_buffer(self) -> Buffer:
@@ -39,6 +46,12 @@ class Window:
         self._height = height
         self._buffer.set_size(width, height)
 
+    def _sigwinch_handler(self, sig: signal.Signals, frame) -> None:
+        """Handle the terminal resize signal."""
+        if sig != signal.SIGWINCH:
+            return
+        self._event_queue.put(WindowResizeEvent())
+
     def draw(self) -> None:
         """Draw the contents of the window."""
 
@@ -52,14 +65,22 @@ class Window:
         attrs = termios.tcgetattr(sys.stdin)
         attrs[3] = attrs[3] & (~(termios.ECHO | termios.ICANON))
         termios.tcsetattr(sys.stdin, termios.TCSANOW, attrs)
+        # Register handler for SIGWINCH
+        signal.signal(signal.SIGWINCH, self._sigwinch_handler)
 
-        key_queue: "Queue[KeyCombo]" = Queue()
-        read_keys(key_queue)
+        # Re-initialise buffer with correct dimensions
+        self.on_resize(*get_terminal_size(self.get_dimensions()))
+
+        read_keys(self._event_queue)
 
         self.draw()
         self._buffer.flush()
         while self._should_run:
-            self.on_key(key_queue.get())
+            event = self._event_queue.get()
+            if isinstance(event, KeyCombo):
+                self.on_key(event)
+            elif isinstance(event, WindowResizeEvent):
+                self.on_resize(*get_terminal_size(self.get_dimensions()))
             self.draw()
             self._buffer.flush()
 
