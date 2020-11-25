@@ -1,10 +1,19 @@
-from enum import Enum
+"""
+The keyboard handling of pykittyui
+
+TODO:
+- kitty key decoding
+- modifiers handling
+"""
+
+from enum import Enum, IntFlag
 from queue import Queue
 from sys import stdin
 from threading import Thread
 from typing import NamedTuple, Set, Union
 
 from pykittyui.events import Event
+
 
 class SpecialKey(Enum):
     """
@@ -19,13 +28,19 @@ class SpecialKey(Enum):
 
 class KeyEvent(Event):
     """A container for a key and a set of modifiers."""
+
     def __init__(self, key: Union[SpecialKey, str], modifiers: Set["Modifier"]):
         self.key = key
         self.modifiers = modifiers
 
 
-class Modifier:
-    pass
+class Modifier(IntFlag):
+    """A modifier."""
+
+    SHIFT = 1
+    ALT = 2
+    CONTROL = 4
+    SUPER = 8
 
 
 def _key_loop(output_queue: "Queue[Event]") -> None:

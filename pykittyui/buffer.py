@@ -3,8 +3,9 @@ This module defines the buffer class, used to buffer print operations.
 
 TODO:
 - RGB color support
-- Buffer delta to only update parts
+- Buffer delta to only update parts/update areas
 - use wcwidth instead of len
+- Properly handle newlines
 """
 import sys
 from typing import List

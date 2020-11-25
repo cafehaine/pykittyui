@@ -1,3 +1,7 @@
+"""
+A simple helloworld that displays a centered text.
+"""
+
 from pykittyui import Window
 from pykittyui.keys import KeyEvent, SpecialKey
 

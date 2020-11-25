@@ -1,3 +1,7 @@
+"""
+PyKittyUi is a terminal ui helper made for Kitty.
+"""
+
 from abc import ABC, abstractmethod
 import atexit
 from queue import Queue
