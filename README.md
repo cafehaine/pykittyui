@@ -17,13 +17,11 @@ Here's a really simplified program that uses PyKittyUi to draw some text:
 from pykittyui import Window
 
 class HelloWorld(Window):
-    def __init__(self):
-        super().__init__()
 
     def draw(self):
         buff.draw_text(0, 0, "Press q to quit.")
 
-    def on_key(self, event) -> None:
+    def on_key(self, event):
         if event.key == "q" and not event.modifiers:
             self.quit()
 
