@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 import atexit
 from queue import Queue
 from shutil import get_terminal_size
@@ -6,24 +7,24 @@ import sys
 import termios
 from typing import Sequence, Tuple, Union
 
-from .keys import KeyCombo, read_keys
-from .buffer import Buffer
+from pykittyui.buffer import Buffer
+import pykittyui.events as events
+from pykittyui.keys import KeyEvent, read_keys
 
 
-class WindowResizeEvent:
-    """Sent when the window was resized."""
-
-
-class Window:
+class Window(ABC):
     """A terminal GUI."""
 
     def __init__(self) -> None:
-        self._should_run: bool = False
         self._width: int = 80
         self._height: int = 24
         self._buffer = Buffer(80, 24)
-        self._event_queue: "Queue[Union[KeyCombo, WindowResizeEvent]]" = Queue()
+        self._event_queue: "Queue[events.Event]" = Queue()
         atexit.register(self._cleanup)
+
+    def queue_event(self, event: events.Event) -> None:
+        """Put an event at the end of the queue."""
+        self._event_queue.put(event)
 
     def get_buffer(self) -> Buffer:
         """Return the internal buffer."""
@@ -33,31 +34,37 @@ class Window:
         """Return the width and height of this window."""
         return self._width, self._height
 
-    def on_key(self, combo: KeyCombo) -> None:
+    @abstractmethod
+    def on_key(self, combo: KeyEvent) -> None:
         """Handle a key press."""
 
     def quit(self) -> None:
         """Stop the running app."""
-        self._should_run = False
+        self.queue_event(events.QuitEvent())
+
+    def redraw(self) -> None:
+        """Redraw the screen."""
+        self.queue_event(events.RedrawEvent())
 
     def on_resize(self, width: int, height: int) -> None:
         """When the terminal was resized."""
         self._width = width
         self._height = height
         self._buffer.set_size(width, height)
+        self.queue_event(events.RedrawEvent())
 
-    def _sigwinch_handler(self, sig: signal.Signals, frame) -> None:
+    def _sigwinch_handler(self, sig: signal.Signals, _frame) -> None:
         """Handle the terminal resize signal."""
         if sig != signal.SIGWINCH:
             return
-        self._event_queue.put(WindowResizeEvent())
+        self.queue_event(events.ResizeEvent())
 
+    @abstractmethod
     def draw(self) -> None:
         """Draw the contents of the window."""
 
     def loop(self) -> None:
         """Run the main loop."""
-        self._should_run = True
         # Enable kitty full mode
         sys.stdout.write("\x1b[?2017h")
         sys.stdout.flush()
@@ -75,14 +82,19 @@ class Window:
 
         self.draw()
         self._buffer.flush()
-        while self._should_run:
+        while True:
             event = self._event_queue.get()
-            if isinstance(event, KeyCombo):
+            if isinstance(event, KeyEvent):
                 self.on_key(event)
-            elif isinstance(event, WindowResizeEvent):
+            elif isinstance(event, events.ResizeEvent):
                 self.on_resize(*get_terminal_size(self.get_dimensions()))
-            self.draw()
-            self._buffer.flush()
+            elif isinstance(event, events.QuitEvent):
+                break
+            elif isinstance(event, events.RedrawEvent):
+                self.draw()
+                self._buffer.flush()
+            else:
+                raise RuntimeError("Unhandled event.")
 
     @staticmethod
     def _cleanup() -> None:

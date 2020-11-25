@@ -1,5 +1,5 @@
 from pykittyui import Window
-from pykittyui.keys import KeyCombo, SpecialKey
+from pykittyui.keys import KeyEvent, SpecialKey
 
 
 class HelloWorld(Window):
@@ -18,11 +18,12 @@ class HelloWorld(Window):
         y = height // 2
         buff.draw_text(x, y, self.text)
 
-    def on_key(self, combo: KeyCombo) -> None:
+    def on_key(self, combo: KeyEvent) -> None:
         if combo.key in ("q", SpecialKey.ESCAPE) and not combo.modifiers:
             self.quit()
         else:
             self.text = f"Key: {combo.key!r}. Press 'q' to exit."
+            self.redraw()
 
 
 if __name__ == "__main__":

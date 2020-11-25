@@ -4,6 +4,7 @@ from sys import stdin
 from threading import Thread
 from typing import NamedTuple, Set, Union
 
+from pykittyui.events import Event
 
 class SpecialKey(Enum):
     """
@@ -16,18 +17,18 @@ class SpecialKey(Enum):
     ESCAPE = "y"
 
 
-class KeyCombo(NamedTuple):
+class KeyEvent(Event):
     """A container for a key and a set of modifiers."""
-
-    key: Union[SpecialKey, str]
-    modifiers: Set["Modifier"]
+    def __init__(self, key: Union[SpecialKey, str], modifiers: Set["Modifier"]):
+        self.key = key
+        self.modifiers = modifiers
 
 
 class Modifier:
     pass
 
 
-def _key_loop(output_queue: "Queue[KeyCombo]") -> None:
+def _key_loop(output_queue: "Queue[Event]") -> None:
     """The loop run in a separate thread to create key events."""
     modifiers: Set[Modifier] = set()
     while True:
@@ -40,9 +41,9 @@ def _key_loop(output_queue: "Queue[KeyCombo]") -> None:
             kitty_code += key
             # TODO parse code
         else:
-            output_queue.put(KeyCombo(key, modifiers))
+            output_queue.put(KeyEvent(key, modifiers))
 
 
-def read_keys(output_queue: "Queue[KeyCombo]") -> None:
-    """Spin up a thread that will push KeyCombos into a queue, reading stdin."""
+def read_keys(output_queue: "Queue[Event]") -> None:
+    """Spin up a thread that will push KeyEvents into a queue, reading stdin."""
     Thread(target=_key_loop, args=(output_queue,), daemon=True).start()
