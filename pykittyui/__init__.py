@@ -69,6 +69,8 @@ class Window(ABC):
 
     def loop(self) -> None:
         """Run the main loop."""
+        # Enable alternate buffer
+        sys.stdout.write("\x1b[?1047h")
         # Enable kitty full mode
         sys.stdout.write("\x1b[?2017h")
         sys.stdout.flush()
@@ -105,6 +107,8 @@ class Window(ABC):
         """Cleanup on destroy."""
         # Disable kitty full mode
         sys.stdout.write("\x1b[?2017l")
+        # Exit alternate buffer
+        sys.stdout.write("\x1b[?47l")
         sys.stdout.flush()
         # Enable key echo
         attrs = termios.tcgetattr(sys.stdin)
