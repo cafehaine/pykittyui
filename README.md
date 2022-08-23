@@ -1,3 +1,7 @@
+# Unmaintained project!
+
+I might take another stab at this, but at the moment I no longer plan on developing this.
+
 # PyKittyUi
 
 PyKittyUI is an Open-Source low level python library to help you create TUIs in
